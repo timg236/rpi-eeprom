@@ -30,11 +30,22 @@ FILENAME_LEN = 12
 TEMP_DIR = None
 
 def exit_handler():
+    """
+    Delete any temporary files.
+    """
     if TEMP_DIR is not None and os.path.exists(TEMP_DIR):
         tmp_image = '%s/pieeprom.upd' % TEMP_DIR
         if os.path.exists(tmp_image):
             os.remove(tmp_image)
         os.rmdir(TEMP_DIR)
+
+def exit_error(s):
+    """
+    Trapped a fatal arror, output message to stderr and exit with non-zero
+    return code.
+    """
+    sys.stderr.write("%s\n" % s)
+    sys.exit(1)
 
 def shell_cmd(args):
     start = time.time()
@@ -45,13 +56,15 @@ def shell_cmd(args):
             break
 
     if result.poll is None:
-        sys.stderr.write("%s timeout")
+        sys.stderr.write("%s timeout" % str(args))
         exit(1)
 
     if result.returncode != 0:
+        sys.stderr.write("%s failed: %d\n %s" % (result.returncode, str(args)))
         sys.stderr.write(result.stderr.read())
-        return None
-    return result.stdout.read()
+        exit(1)
+    else:
+        return result.stdout.read()
 
 def get_latest_eeprom():
     """
@@ -59,11 +72,9 @@ def get_latest_eeprom():
     """
     latest = shell_cmd(['rpi-eeprom-update', '-l']).rstrip()
     if latest is None:
-        sys.stdout.write("Failed to determine the latest bootloader update image\n")
-        sys.exit(1)
+        exit_error('Failed to determine the latest bootloader update image')
     if not os.path.exists(latest):
-        sys.stdout.write("%s not found" % latest)
-        sys.exit(1)
+        exit_error("EEPROM image '%s' not found" % latest)
     return latest
 
 def apply_update(config):
@@ -81,7 +92,7 @@ def apply_update(config):
     sys.stdout.write("Updating bootloader EEPROM\n image: %s\nconfig: %s\n" % (latest, config))
     args = ['sudo', 'rpi-eeprom-update', '-d', '-f', tmp_update]
     resp = shell_cmd(args)
-    print(resp)
+    sys.stdout.write(resp)
 
 def read_current_config():
     """
@@ -89,8 +100,7 @@ def read_current_config():
     """
     result = shell_cmd(['vcgencmd', 'bootloader_config'])
     if result is None:
-        sys.stdout.write("Failed to read the current bootloader configuration")
-        sys.exit(1)
+        exit_error('Failed to read the current bootloader configuration')
     return result
 
 class BootloaderImage(object):
@@ -212,10 +222,14 @@ which installs them to the /lib/firmware/raspberrypi/bootloader directory.'
     args = parser.parse_args()
 
     if args.apply is not None:
+        if not os.path.exists(args.apply):
+            exit_error("config file '%s' not found" % args.apply)
         apply_update(args.apply)
     elif args.eeprom is not None:
         image = BootloaderImage(args.eeprom, args.out)
         if args.config is not None:
+            if not os.path.exists(args.config):
+                exit_error("config file '%s' not found" % args.config)
             image.write(args.config)
         else:
             image.read()
