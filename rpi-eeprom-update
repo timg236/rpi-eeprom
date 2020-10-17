@@ -23,8 +23,8 @@ else
    FIRMWARE_ROOT="${script_dir}/firmware"
 fi
 
-# May be used to select beta or stable releases instead of the default critical updates.
-FIRMWARE_RELEASE_STATUS=${FIRMWARE_RELEASE_STATUS:-critical}
+# May be used to select beta or latest stable releases instead of the default updates.
+FIRMWARE_RELEASE_STATUS=${FIRMWARE_RELEASE_STATUS:-default}
 FIRMWARE_IMAGE_DIR=${FIRMWARE_IMAGE_DIR:-${FIRMWARE_ROOT}/${FIRMWARE_RELEASE_STATUS}}
 FIRMWARE_BACKUP_DIR=${FIRMWARE_BACKUP_DIR:-/var/lib/raspberrypi/bootloader/backup}
 ENABLE_VL805_UPDATES=${ENABLE_VL805_UPDATES:-1}
@@ -400,13 +400,13 @@ Options:
       flag use the config in that file. This option only applies when a
       bootloader EEPROM update is needed; if the bootloader EEPROM is up-to-date
       then its config will not be changed.
-   -f Install the given file instead of the latest applicable update
+   -f Install the given file instead of the newest applicable update
       Ignores the FREEZE_VERSION flag in bootloader and is intended for manual
       firmware updates.
    -h Display help text and exit
    -i Ignore package checksums - for rpi-eeprom developers.
    -j Write status information using JSON notation
-   -l Returns the full path to the latest available EEPROM image file according
+   -l Returns the full path to the newest available EEPROM image file according
       to the FIRMWARE_RELEASE_STATUS and FIRMWARE_IMAGE_DIR settings.
    -m Write status information to the given file when run without -a or -f
    -r Removes temporary EEPROM update files from the boot partition.
@@ -439,21 +439,25 @@ those devices to stop working until after the system is reboot.
 
 FIRMWARE_RELEASE_STATUS
 
-Specifies the release status of the firmware to apply. The default is 'critical'.
+Specifies the release status of the firmware to apply. The default is 'default'.
 
 Before selecting a firmware release directory this script checks whether there
-is a board revision specific variant e.g. critical-c03111. If present then the
+is a board revision specific variant e.g. default-c03111. If present then the
 board-revision specific version is used in preference.
 
 Release status:
 
-critical: The latest production release plus important security or hardware compatibility bug fixes.
+default: Production releases plus important security or hardware compatibility bug fixes.
 
-stable: Contains new features that have already undergone some beta testing.
-These are candidates for new production releases.
+latest: Contains new features that have already undergone some beta testing. These
+are stable releases and are candidates for future production releases.
 
 beta: New features, bug fixes for development/test purposes. Use at your own
 risk!
+
+N.B. 'default' was previously known as 'critical' reflecting the fact that
+automatic updates are typically only for hardware compatibility or critical
+bug fixes.
 
 As far as rpi-eeprom-update is concerned FIRMWARE_RELEASE_STATUS is just
 the subdirectory mapping under ${FIRMWARE_ROOT}. Therefore, custom release
