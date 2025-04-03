@@ -6,8 +6,12 @@
 # a hard dependency on OpenSSL.
 
 set -e
+set -u
 
 OPENSSL=${OPENSSL:-openssl}
+KEY=""
+SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH:-""}
+HSM_WRAPPER=""
 
 die() {
    echo "$@" >&2
@@ -79,6 +83,10 @@ rpi-eeprom-digest -k private.pem -i boot.img -o boot.sig
 # As used by update-pieeprom.sh in usbboot/secure-boot-recovery
 rpi-eeprom-digest -k private.pem -i bootconf.txt  -o bootconf.sig
 
+# Generate RSA signature for the EEPROM config file using a
+# Hardware Security Module wrapper script instead of using the private key directly.
+rpi-eeprom-digest -H hsm-wrapper -i bootconf.txt  -o bootconf.sig
+
 # Similarly, but specifying the key with a PKCS#11 URI
 rpi-eeprom-digest -k pkcs11:token=deadbeef;object=bl-key;type=private;pin-value=1234 -i bootconf.txt  -o bootconf.sig
 
@@ -102,7 +110,9 @@ writeSig() {
        echo "ts: $(date -u +%s)" >> "${OUTPUT}"
    fi
 
-   if [ -n "${KEY}" ]; then
+   if [ -n "${HSM_WRAPPER}" ]; then
+      echo "rsa2048: $("${HSM_WRAPPER}" "${IMAGE}")" >> "${OUTPUT}"
+   elif [ -n "${KEY}" ]; then
       "${OPENSSL}" dgst ${ENGINE_OPTS} -sign "${KEY}" -sha256 -out "${SIG_TMP}" "${IMAGE}"
       echo "rsa2048: $(xxd -c 4096 -p < "${SIG_TMP}")" >> "${OUTPUT}"
    fi
@@ -115,17 +125,19 @@ verifySig() {
    sig_hex="$(grep rsa2048 "${sig_file}" | cut -f 2 -d ' ')"
    [ -n "${sig_hex}" ] || die "No RSA signature in ${sig_file}"
 
-   echo ${sig_hex} | xxd -c 4096 -p -r > "${TMP_DIR}/sig.bin"
+   echo "${sig_hex}" | xxd -c 4096 -p -r > "${TMP_DIR}/sig.bin"
    "${OPENSSL}" dgst ${ENGINE_OPTS} -verify "${KEY}" -signature "${TMP_DIR}/sig.bin" "${IMAGE}" || die "${IMAGE} not verified"
 }
 
 OUTPUT=""
 VERIFY=0
-while getopts i:k:ho:v: option; do
+while getopts i:H:k:ho:v: option; do
    case "${option}" in
    i) IMAGE="${OPTARG}"
       ;;
    k) KEY="${OPTARG}"
+      ;;
+   H) HSM_WRAPPER="${OPTARG}"
       ;;
    o) OUTPUT="${OPTARG}"
       ;;
