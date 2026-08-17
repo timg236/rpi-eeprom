@@ -1,5 +1,18 @@
 # Raspberry Pi5 bootloader EEPROM release notes
 
+# 2026-06-18: Suspend to RAM / deep sleep bringup
+* Initial bringup release for S2RAM where SDRAM is put into self-refresh
+  and core power domain switched off (VPU, ARM, pretty much everything).
+  Wakeup from PMIC power-button or RTC right now.
+
+  See https://github.com/raspberrypi/linux/pull/7514
+
+  Status
+  Resumes into the kernel, WiFi, RP1 will timeout. 
+
+  Debug - cmdline.txt
+  no_console_suspend pm_debug_messages
+
 ## 2026-05-27: Promote pieeprom-2026-05-26 to the default release (default)
 
 ## 2026-05-26: Make Pi 5 use the correct entropy source for kaslr-seed and rng-seed (latest)
