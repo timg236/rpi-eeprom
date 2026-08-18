@@ -1,12 +1,16 @@
 # Raspberry Pi5 bootloader EEPROM release notes
 
-# 2026-08-17-v3: Rebase + SDRAM checksum of 0..16MB
+# 2026-08-18-v1: s2ram: Fix bootsys-ab blob
+* Fix bootsys-ab, resume state moved to different AON regs
+* Log clocks on resume
+
+# 2026-08-17-v3: s2ram: Rebase + SDRAM checksum of 0..16MB
 * Rebase, removed lots of dead/debug code
 
 Notes
 * MMC / PCIe not working on C1
 
-# 2026-08-17-v1: Suspend to RAM / deep sleep bringup
+# 2026-08-17-v1: s2ram: Suspend to RAM / deep sleep bringup
 * Initial bringup release for S2RAM where SDRAM is put into self-refresh
   and core power domain switched off (VPU, ARM, pretty much everything).
   Wakeup from PMIC power-button or RTC right now.
