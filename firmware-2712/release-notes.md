@@ -1,5 +1,7 @@
 # Raspberry Pi5 bootloader EEPROM release notes
 
+# 2026-08-19-v1: s2ram: Log clocks before suspend/resume
+
 # 2026-08-18-v1: s2ram: Fix bootsys-ab blob
 * Fix bootsys-ab, resume state moved to different AON regs
 * Log clocks on resume
